@@ -1,0 +1,89 @@
+---
+title: "Assignment 8"
+author: "GW"
+date: "2025-03-11"
+output: html_document
+---
+
+Loading in packages.
+
+```{r, message = F}
+library(ggplot2)
+library(dplyr)
+library(vegan)
+library(ape)
+library(ggtree)
+```
+
+Loading in data and inspecting.
+
+```{r}
+dat <- read.csv("C:/Users/Grace/Downloads/FloristicSurvey.csv")
+```
+
+
+head(dat)
+tail(dat)
+dim(dat)
+summary(dat)
+```
+
+Selecting for data to be used in analysis. 
+
+```{r}
+spec_dat <- dat[, 10:ncol(dat)]
+rownames(spec_dat) <- dat$Quadrate
+```
+
+Creating an OTU table. 
+
+```{r}
+otu_table <- as.data.frame(spec_dat)
+head(otu_table)
+```
+
+NMDS
+
+```{r, message = F}
+set.seed(10)
+nmds_dat <- metaMDS(otu_table, distance = "bray", 
+                    binary = F)
+```
+
+Combining datasets.
+
+```{r}
+dat2 <- data.frame(NMDS1 = nmds_dat$points[,1],
+                  NMDS2 = nmds_dat$points[,2],
+                  Quadrate = row.names(otu_table))
+```
+
+```{r}
+merge_dat <- merge(dat2, dat, by = "Quadrate", all.x = T, all.y = F)
+```
+
+
+Plotting NMDS with Location (in vs. out)
+
+```{r}
+ggplot(merge_dat, aes(x = NMDS1, y = NMDS2, colour = Location)) +
+  geom_point() +
+  theme_minimal()
+```
+
+```{r}
+ggplot(merge_dat, aes(x = NMDS1, y = NMDS2, colour = as.factor(Population))) +
+  geom_point() +
+  theme_minimal()
+```
+
+Creating a tree.
+
+```{r}
+dist <- vegdist(spec_dat, method = "bray", binary = F)
+spec_tree <- nj(dist)
+ggtree(spec_tree, layout = "rectangular") %<+%
+  dat + geom_tiplab(aes(colour = as.factor(Population))) +
+  geom_label(aes(x = branch, label = Location), fill = 'lavender') 
+```
+
